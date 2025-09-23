@@ -1,7 +1,3 @@
-# Ignore Go module files
-go.mod
-go.sum
-
 .vscode/
 .DS_Store
 
