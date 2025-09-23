@@ -11,3 +11,4 @@ testdata/
 *_test.go
 
 .env
+.aider*
