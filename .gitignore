@@ -13,3 +13,5 @@ go-fish-api.test
 # Test Caches
 testdata/
 *_test.go
+
+.env

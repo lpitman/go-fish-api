@@ -1,8 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
-	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,83 +16,117 @@ type fish struct {
 
 // fishData slice to seed our fish tracking data
 // Later we'll put this in sqlite
-var fishData = []fish{
-	{ID: "1", Species: "Salmon", TrackingInfo: "Device-001", WeightKG: 4.5},
-	{ID: "2", Species: "Tuna", TrackingInfo: "Device-002", WeightKG: 3.2},
-	{ID: "3", Species: "Trout", TrackingInfo: "Device-003", WeightKG: 2.8},
-}
+// var fishData = []fish{
+// 	{ID: "1", Species: "Salmon", TrackingInfo: "Device-001", WeightKG: 4.5},
+// 	{ID: "2", Species: "Tuna", TrackingInfo: "Device-002", WeightKG: 3.2},
+// 	{ID: "3", Species: "Trout", TrackingInfo: "Device-003", WeightKG: 2.8},
+// }
 
 // Responds with the list of all fish as JSON.
 func getFish(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, fishData)
+	rows, err := DB.Query("SELECT id, species, tracking_info, weight_kg FROM fish")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var fishList []fish
+	for rows.Next() {
+		var f fish
+		if err := rows.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		fishList = append(fishList, f)
+	}
+	c.IndentedJSON(http.StatusOK, fishList)
 }
 
 // getFishByID locates the fish whose ID value matches the id
 func getFishByID(c *gin.Context) {
 	id := c.Param("id")
 
-	for _, f:= range fishData {
-		if f.ID == id {
-			c.IndentedJSON(http.StatusOK, f)
-			return
+	var f fish
+	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg FROM fish WHERE id = ?", id) 
+	if err := row.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
+		return
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+
+	c.IndentedJSON(http.StatusOK, f)
 }
 
 // postFish adds an fish from JSON received in the request body.
 func postFish(c *gin.Context) {
-	var newFish fish
-
-	if err := c.BindJSON(&newFish); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var f fish
+	if err := c.BindJSON(&f); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Generate a new ID for the fishy
-	newID := strconv.Itoa(len(fishData) + 1)
-	newFish.ID = newID
-	fishData = append(fishData, newFish)
-	c.IndentedJSON(http.StatusCreated, newFish)
+	_, err := DB.Exec("INSERT INTO fish (species, tracking_info, weight_kg) VALUES (?, ?, ?)", 
+		f.Species, f.TrackingInfo, f.WeightKG)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusCreated, f)
 }
 
 // updateFish updates a little fishy from JSON received in the request body.
 func updateFish(c *gin.Context) {
 	id := c.Param("id")
-	var updatedFish fish
+	var f fish
 
-	if err := c.BindJSON(&updatedFish); err != nil {
+	if err := c.BindJSON(&f); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// find fishy and update it
-	for i, f:= range fishData {
-		if f.ID == id {
-			fishData[i].Species = updatedFish.Species
-			fishData[i].TrackingInfo = updatedFish.TrackingInfo
-			fishData[i].WeightKG = updatedFish.WeightKG
-			c.IndentedJSON(http.StatusOK, fishData[i])
-			return
-		}
+	result, err := DB.Exec("UPDATE fish SET species = ?, tracking_info = ?, weight_kg = ? WHERE id = ?", 
+		f.Species, f.TrackingInfo, f.WeightKG, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	// No fishy found, return 404
-	c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+		return
+	}
+
+	// Return the updated fish
+	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg FROM fish WHERE id = ?", id)
+	if err := row.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	
+	c.IndentedJSON(http.StatusOK, f)
 }
 
 // deleteFish removes a fish that has been eaten, by ID
 func deleteFish(c *gin.Context) {
 	id := c.Param("id")
 
-	for i, f:= range fishData {
-		if f.ID == id {
-			fishData = append(fishData[:i], fishData[i+1:]...)
-			c.IndentedJSON(http.StatusNoContent, gin.H{"message": "bye bye fishy!"})
-			return
-		}
+	result, err := DB.Exec("DELETE FROM fish WHERE id = ?", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	// No fishy found, return 404
-	c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

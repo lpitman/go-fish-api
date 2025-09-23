@@ -1,10 +1,25 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("No .env file found, relying on environment variables: %v", err)
+	}
+
+	// Connect to the database
+	if err := ConnectDB(); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer DB.Close()
+
 	router := gin.Default()
 
 	// Define routes
@@ -14,6 +29,10 @@ func main() {
 	router.PUT("/fish/:id", updateFish)
 	router.DELETE("/fish/:id", deleteFish)
 
-	router.Run("localhost:8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	router.Run("localhost:" + port)
 }
 
