@@ -48,8 +48,16 @@ func postFish(repo *FishRepository) gin.HandlerFunc {
 			return
 		}
 
+		// Check if location data is missing and set to default if it is.
+		if newFish.Location.Latitude == 0 && newFish.Location.Longitude == 0 {
+			log.Println("Location data not provided. Setting to default Halifax location.")
+			newFish.Location.Latitude = 44.692661
+			newFish.Location.Longitude = -63.639532
+		}
+
 		newFish.ID = uuid.New().String()
 		if err := repo.Create(&newFish); err != nil {
+			log.Println("Error creating new fish:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create fish"})
 			return
 		}

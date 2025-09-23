@@ -30,7 +30,7 @@ func ConnectDB() error {
 	// Initialize our fishy table if it doesn't exist
 	createTableQuery := `
 	CREATE TABLE IF NOT EXISTS fish (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id TEXT PRIMARY KEY,
 		species TEXT NOT NULL,
 		tracking_info TEXT NOT NULL,
 		weight_kg REAL NOT NULL,

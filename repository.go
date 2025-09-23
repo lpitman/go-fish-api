@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"log"
 )
 
 type Location struct {
@@ -52,8 +53,8 @@ func (r *FishRepository) GetAll() ([]*Fish, error) {
 			&f.Species,
 			&f.TrackingInfo,
 			&f.WeightKG,
-			&f.Location.Longitude,
 			&f.Location.Latitude,
+			&f.Location.Longitude,
 		); err != nil {
 			return nil, err
 		}
@@ -94,6 +95,9 @@ func (r *FishRepository) GetByID(id string) (*Fish, error) {
 
 // Create inserts a new fish record into the database.
 func (r *FishRepository) Create(f *Fish) error {
+	log.Println("Creating fish with ID:", f.ID)
+	log.Printf("Fish details: Species=%s, TrackingInfo=%s, WeightKG=%.2f, Location=(Lat: %.6f, Long: %.6f)\n", 
+		f.Species, f.TrackingInfo, f.WeightKG, f.Location.Latitude, f.Location.Longitude)
 	_, err := r.db.Exec(`
 		INSERT INTO fish (
 			id, 
