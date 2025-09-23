@@ -19,7 +19,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Prerequisites
 
 You need to have Go installed on your system.
-*   [Go](https://golang.org/doc/install) (version 1.16 or higher recommended)
+*   [Go](https://golang.org/doc/install) 
 
 ### Running the Application
 1.  **Install Dependencies**:
