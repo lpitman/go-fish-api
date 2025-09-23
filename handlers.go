@@ -7,16 +7,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Location struct {
+	Longitude float64 `json:"longitude"`
+	Latitude  float64 `json:"latitude"`	
+}
+
 type fish struct {
 	ID     string  `json:"id"`
 	Species string  `json:"species"`
 	TrackingInfo  string     `json:"trackingInfo"`
 	WeightKG  float64     `json:"weightKG"`
+	Location  Location  `json:"location"`
 }
 
 // Responds with the list of all fish as JSON.
 func getFish(c *gin.Context) {
-	rows, err := DB.Query("SELECT id, species, tracking_info, weight_kg FROM fish")
+	rows, err := DB.Query("SELECT id, species, tracking_info, weight_kg, latitude, longitude FROM fish")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -26,7 +32,13 @@ func getFish(c *gin.Context) {
 	var fishList []fish
 	for rows.Next() {
 		var f fish
-		if err := rows.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+		if err := rows.Scan(
+			&f.ID, 
+			&f.Species, 
+			&f.TrackingInfo, 
+			&f.WeightKG, 
+			&f.Location.Latitude, 
+			&f.Location.Longitude); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -40,8 +52,14 @@ func getFishByID(c *gin.Context) {
 	id := c.Param("id")
 
 	var f fish
-	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg FROM fish WHERE id = ?", id) 
-	if err := row.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg, latitude, longitude FROM fish WHERE id = ?", id) 
+	if err := row.Scan(
+		&f.ID, 
+		&f.Species, 
+		&f.TrackingInfo, 
+		&f.WeightKG,
+		&f.Location.Latitude,
+		&f.Location.Longitude); err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"message": "fish not found"})
 		} else {
@@ -61,8 +79,8 @@ func postFish(c *gin.Context) {
 		return
 	}
 
-	_, err := DB.Exec("INSERT INTO fish (species, tracking_info, weight_kg) VALUES (?, ?, ?)", 
-		f.Species, f.TrackingInfo, f.WeightKG)
+	_, err := DB.Exec("INSERT INTO fish (species, tracking_info, weight_kg, latitude, longitude) VALUES (?, ?, ?, ?, ?)", 
+		f.Species, f.TrackingInfo, f.WeightKG, f.Location.Latitude, f.Location.Longitude)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -81,7 +99,7 @@ func updateFish(c *gin.Context) {
 		return
 	}
 
-	result, err := DB.Exec("UPDATE fish SET species = ?, tracking_info = ?, weight_kg = ? WHERE id = ?", 
+	result, err := DB.Exec("UPDATE fish SET species = ?, tracking_info = ?, weight_kg, latitude, longitude = ? WHERE id = ?", 
 		f.Species, f.TrackingInfo, f.WeightKG, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -95,8 +113,14 @@ func updateFish(c *gin.Context) {
 	}
 
 	// Return the updated fish
-	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg FROM fish WHERE id = ?", id)
-	if err := row.Scan(&f.ID, &f.Species, &f.TrackingInfo, &f.WeightKG); err != nil {
+	row := DB.QueryRow("SELECT id, species, tracking_info, weight_kg FROM fish WHERE id, latitude, longitude = ?", id)
+	if err := row.Scan(
+		&f.ID, 
+		&f.Species, 
+		&f.TrackingInfo, 
+		&f.WeightKG,
+		&f.Location.Latitude,
+		&f.Location.Longitude); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

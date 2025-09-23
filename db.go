@@ -33,7 +33,9 @@ func ConnectDB() error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		species TEXT NOT NULL,
 		tracking_info TEXT NOT NULL,
-		weight_kg REAL NOT NULL
+		weight_kg REAL NOT NULL,
+		longitude REAL,
+		latitude REAL
 	);`
 	_, err = DB.Exec(createTableQuery)
 	if err != nil {
