@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
+var defaultLatitude = 44.692661
+var defaultLongitude = -63.639532
+
 // Responds with the list of all fish as JSON.
 func getFish(repo *FishRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -51,8 +54,8 @@ func postFish(repo *FishRepository) gin.HandlerFunc {
 		// Check if location data is missing and set to default if it is.
 		if newFish.Location.Latitude == 0 && newFish.Location.Longitude == 0 {
 			log.Println("Location data not provided. Setting to default Halifax location.")
-			newFish.Location.Latitude = 44.692661
-			newFish.Location.Longitude = -63.639532
+			newFish.Location.Latitude = defaultLatitude
+			newFish.Location.Longitude = defaultLongitude
 		}
 
 		newFish.ID = uuid.New().String()
@@ -65,6 +68,27 @@ func postFish(repo *FishRepository) gin.HandlerFunc {
 	}
 }
 
+// resetFishLocations back to the default Halifax location.
+func resetFishLocations(repo *FishRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fishes, err := repo.GetAll()
+		if err != nil {
+			log.Println("Error retrieving fish for reset:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve fish data"})
+			return
+		}
+
+		for _, fish := range fishes {
+			fish.Location.Latitude = defaultLatitude
+			fish.Location.Longitude = defaultLongitude
+			if _, err := repo.Update(fish); err != nil {
+				log.Printf("Error resetting location for fish %s: %v\n", fish.ID, err)
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "All fish locations reset to default"})
+
+	}
+}
 // updateFish updates a little fishy from JSON received in the request body.
 func updateFish(repo *FishRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/gin-contrib/cors"
 )
 
 func main() {
@@ -29,6 +30,7 @@ func main() {
 	startSimulation(fishService)
 
 	router := gin.Default()
+	router.Use(cors.Default())
 
 	// Define routes
 	router.GET("/fish", getFish(fishRepo))
@@ -36,6 +38,7 @@ func main() {
 	router.POST("/fish", postFish(fishRepo))
 	router.PUT("/fish/:id", updateFish(fishRepo))
 	router.DELETE("/fish/:id", deleteFish(fishRepo))
+	router.PUT("/fish/reset", resetFishLocations(fishRepo))
 
 	port := os.Getenv("PORT")
 	if port == "" {
