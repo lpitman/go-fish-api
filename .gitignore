@@ -1,0 +1,15 @@
+# Ignore Go module files
+go.mod
+go.sum
+
+.vscode/
+.DS_Store
+
+# executables
+go-fish-api
+go-fish-api.exe
+go-fish-api.test
+
+# Test Caches
+testdata/
+*_test.go
