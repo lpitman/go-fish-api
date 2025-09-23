@@ -14,14 +14,6 @@ type fish struct {
 	WeightKG  float64     `json:"weightKG"`
 }
 
-// fishData slice to seed our fish tracking data
-// Later we'll put this in sqlite
-// var fishData = []fish{
-// 	{ID: "1", Species: "Salmon", TrackingInfo: "Device-001", WeightKG: 4.5},
-// 	{ID: "2", Species: "Tuna", TrackingInfo: "Device-002", WeightKG: 3.2},
-// 	{ID: "3", Species: "Trout", TrackingInfo: "Device-003", WeightKG: 2.8},
-// }
-
 // Responds with the list of all fish as JSON.
 func getFish(c *gin.Context) {
 	rows, err := DB.Query("SELECT id, species, tracking_info, weight_kg FROM fish")
