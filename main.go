@@ -38,7 +38,7 @@ func main() {
 	router.POST("/fish", postFish(fishRepo))
 	router.PUT("/fish/:id", updateFish(fishRepo))
 	router.DELETE("/fish/:id", deleteFish(fishRepo))
-	router.PUT("/fish/reset", resetFishLocations(fishRepo))
+	router.GET("/fish/reset", resetFishLocations(fishRepo))
 
 	port := os.Getenv("PORT")
 	if port == "" {
