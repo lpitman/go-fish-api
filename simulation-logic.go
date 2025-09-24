@@ -87,8 +87,8 @@ func (s *FishService) UpdateFishLocations() {
 		if eatenFish[f.ID] {
 			continue
 		}
-		f.Location.Latitude += (rand.Float64() - 0.5) * 0.01
-		f.Location.Longitude += (rand.Float64() - 0.5) * 0.01
+		f.Location.Latitude += (rand.Float64() - 0.5) * 0.001
+		f.Location.Longitude += (rand.Float64() - 0.5) * 0.001
 		f.WeightKG = roundFloat(f.WeightKG+0.01, 2)
 		if _, err := s.repo.Update(f); err != nil {
 			log.Printf("Error updating fish %s: %v\n", f.ID, err)
